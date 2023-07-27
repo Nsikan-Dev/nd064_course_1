@@ -1,4 +1,6 @@
+import logging
 import sqlite3
+import sys
 
 from flask import Flask, jsonify, json, render_template, request, url_for, redirect, flash
 from werkzeug.exceptions import abort
@@ -8,6 +10,7 @@ from werkzeug.exceptions import abort
 def get_db_connection():
     connection = sqlite3.connect('database.db')
     connection.row_factory = sqlite3.Row
+    connection.execute('INSERT INTO db_connections DEFAULT VALUES')
     return connection
 
 # Function to get a post using its ID
@@ -36,13 +39,16 @@ def index():
 def post(post_id):
     post = get_post(post_id)
     if post is None:
+      app.logger.info(f'Article {post.title} not found')
       return render_template('404.html'), 404
     else:
+      app.logger.info(f'Article {post.title} retrieved')
       return render_template('post.html', post=post)
 
 # Define the About Us page
 @app.route('/about')
 def about():
+    app.logger.info('About us page accessed')
     return render_template('about.html')
 
 # Define the post creation functionality 
@@ -60,11 +66,38 @@ def create():
                          (title, content))
             connection.commit()
             connection.close()
-
+            app.logger.info(f'Article {title} created')
             return redirect(url_for('index'))
 
     return render_template('create.html')
 
+@app.route('/healthz')
+def healthcheck():
+    response = app.response_class(
+            response=json.dumps({"result":"OK - healthy"}),
+            status=200,
+            mimetype='application/json'
+    )
+    app.logger.info('Health check successful')
+    return response
+
+@app.route('/metrics')
+def metrics():
+    connection = get_db_connection()
+    connections = connection.execute('SELECT * FROM db_connections').fetchall()
+    posts = connection.execute('SELECT * FROM posts').fetchall()
+    no_of_db_connections = len(connections)
+    no_of_posts = len(posts)
+    response = app.response_class(
+            response=json.dumps({"db_connection_count": no_of_db_connections, "post_count": no_of_posts}),
+            status=200,
+            mimetype='application/json'
+    )
+    app.logger.info('Metrics request successful')
+    return response
+
 # start the application on port 3111
 if __name__ == "__main__":
+   
+   logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
    app.run(host='0.0.0.0', port='3111')
