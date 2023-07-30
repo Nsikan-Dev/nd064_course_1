@@ -1,0 +1,8 @@
+apiVersion: v1
+name: techtrends-deployment
+description: Install TechTrends deployment manifests 
+keywords:
+- techtrends 
+version: latest
+maintainers:
+- name: Nsikan Udoyen 
