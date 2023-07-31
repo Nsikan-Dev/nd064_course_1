@@ -3,6 +3,6 @@ name: techtrends-deployment
 description: Install TechTrends deployment manifests 
 keywords:
 - techtrends 
-version: latest
+version: 1.0.0
 maintainers:
 - name: Nsikan Udoyen 
