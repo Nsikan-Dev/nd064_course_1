@@ -9,7 +9,7 @@ metadata:
   namespace: {{ .Values.namespace.name }}
 
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: techtrends
