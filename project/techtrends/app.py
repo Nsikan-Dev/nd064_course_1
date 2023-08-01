@@ -4,6 +4,7 @@ import sys
 
 from flask import Flask, jsonify, json, render_template, request, url_for, redirect, flash
 from werkzeug.exceptions import abort
+from logging import StreamHandler
 
 # Function to get a database connection.
 # This function connects to database with the name `database.db`
@@ -18,6 +19,7 @@ def get_post(post_id):
     connection = get_db_connection()
     post = connection.execute('SELECT * FROM posts WHERE id = ?',
                         (post_id,)).fetchone()
+    connection.commit()
     connection.close()
     return post
 
@@ -30,6 +32,7 @@ app.config['SECRET_KEY'] = 'your secret key'
 def index():
     connection = get_db_connection()
     posts = connection.execute('SELECT * FROM posts').fetchall()
+    connection.commit()
     connection.close()
     return render_template('index.html', posts=posts)
 
@@ -39,10 +42,10 @@ def index():
 def post(post_id):
     post = get_post(post_id)
     if post is None:
-      app.logger.info(f'Article {post.title} not found')
+      app.logger.error(f"Article {post_id} not found")
       return render_template('404.html'), 404
     else:
-      app.logger.info(f'Article {post.title} retrieved')
+      app.logger.info(f"Article {post['title']} retrieved")
       return render_template('post.html', post=post)
 
 # Define the About Us page
@@ -86,6 +89,8 @@ def metrics():
     connection = get_db_connection()
     connections = connection.execute('SELECT * FROM db_connections').fetchall()
     posts = connection.execute('SELECT * FROM posts').fetchall()
+    connection.commit()
+    connection.close()
     no_of_db_connections = len(connections)
     no_of_posts = len(posts)
     response = app.response_class(
@@ -98,6 +103,10 @@ def metrics():
 
 # start the application on port 3111
 if __name__ == "__main__":
-   
-   logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+   handlers = [
+    StreamHandler(),  # Default stream=sys.stderr
+    StreamHandler(stream=sys.stdout)
+    ]
+
+   logging.basicConfig(handlers=handlers, level=logging.DEBUG)
    app.run(host='0.0.0.0', port='3111')
